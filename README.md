@@ -27,7 +27,7 @@ Follow these steps to get GhostShield running on your Raspberry Pi.
 Open your terminal on the Raspberry Pi and clone the project:
 
 ```bash
-git clone [https://github.com/YOUR-USERNAME/GhostShield.git](https://github.com/YOUR-USERNAME/GhostShield.git)
+git clone https://github.com/YOUR-USERNAME/GhostShield.git
 cd GhostShield
 
 
