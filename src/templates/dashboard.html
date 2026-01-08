@@ -3,86 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostShield UI</title>
+    <title>GhostShield Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b1120; color: #cbd5e1; font-family: monospace; }
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; border: 1px solid; }
+        body { background-color: #0f172a; color: #e2e8f0; font-family: monospace; }
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; }
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        tr:hover { background-color: #334155; }
     </style>
 </head>
-<body class="p-6 max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
-        <h1 class="text-3xl font-black text-white">GHOST<span class="text-green-500">SHIELD</span></h1>
-        <div class="text-right"><span class="w-3 h-3 bg-green-500 rounded-full inline-block animate-pulse"></span> SYSTEM ACTIVE</div>
+<body class="p-4 md:p-8 max-w-7xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+        <h1 class="text-3xl font-bold text-white">GHOST<span class="text-green-500">SHIELD</span></h1>
+        <div class="text-xs text-gray-500">LIVE MONITORING ACTIVE</div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="card p-5 border-l-4 border-blue-500">
-            <div class="text-gray-400 text-xs">TOTAL QUERIES</div>
-            <div class="text-3xl font-bold text-white" id="stat-total">0</div>
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="card p-4 border-l-4 border-blue-500">
+            <div class="text-xs text-gray-400">ANFRAGEN TOTAL</div>
+            <div class="text-2xl font-bold" id="s-total">0</div>
         </div>
-        <div class="card p-5 border-l-4 border-red-500 bg-red-900/10">
-            <div class="text-red-300 text-xs">BLOCKED ADS</div>
-            <div class="text-3xl font-bold text-red-500" id="stat-blocked">0</div>
+        <div class="card p-4 border-l-4 border-red-500 bg-red-900/10">
+            <div class="text-xs text-red-300">GEBLOCKT</div>
+            <div class="text-2xl font-bold text-red-500" id="s-blocked">0</div>
         </div>
-        <div class="card p-5 border-l-4 border-green-500">
-            <div class="text-gray-400 text-xs">ALLOWED TRAFFIC</div>
-            <div class="text-3xl font-bold text-white" id="stat-allowed">0</div>
+        <div class="card p-4 border-l-4 border-green-500">
+            <div class="text-xs text-gray-400">ERLAUBT</div>
+            <div class="text-2xl font-bold" id="s-allowed">0</div>
         </div>
     </div>
 
-    <div class="card p-4">
-        <h3 class="font-bold text-white mb-4 border-b border-gray-700 pb-2">LIVE TRAFFIC INTERCEPTOR</h3>
-        <table class="w-full text-left text-sm text-gray-400">
-            <thead>
-                <tr><th class="pb-2">TIME</th><th class="pb-2">CLIENT IP</th><th class="pb-2">TARGET DOMAIN</th><th class="pb-2 text-right">ACTION</th></tr>
-            </thead>
-            <tbody id="log-body" class="font-mono text-xs">
-                </tbody>
-        </table>
+    <div class="card overflow-hidden">
+        <div class="bg-slate-800 p-3 border-b border-slate-700 font-bold text-sm">LIVE TRAFFIC LOG</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-900 text-gray-400 text-xs uppercase">
+                    <tr>
+                        <th class="p-3">Zeit</th>
+                        <th class="p-3">Gerät (Name / IP)</th>
+                        <th class="p-3">Webseite</th>
+                        <th class="p-3 text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body" class="divide-y divide-slate-700 text-xs md:text-sm">
+                    </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        async function fetchData() {
+        async function update() {
             try {
-                const response = await fetch('/api/stats');
-                const data = await response.json();
+                let res = await fetch('/api/stats');
+                let data = await res.json();
 
-                // Update Stats
-                document.getElementById('stat-total').innerText = data.stats.total;
-                document.getElementById('stat-blocked').innerText = data.stats.blocked;
-                document.getElementById('stat-allowed').innerText = data.stats.allowed;
+                // Zahlen updaten
+                document.getElementById('s-total').innerText = data.stats.total;
+                document.getElementById('s-blocked').innerText = data.stats.blocked;
+                document.getElementById('s-allowed').innerText = data.stats.allowed;
 
-                // Update Table
-                const tbody = document.getElementById('log-body');
-                tbody.innerHTML = ''; // Clear old
-                
+                // Tabelle leeren und neu füllen
+                let html = '';
                 data.logs.forEach(log => {
-                    const row = document.createElement('tr');
-                    row.className = "border-b border-gray-800 hover:bg-slate-800";
+                    let statusClass = log.status === 'BLOCKED' 
+                        ? 'bg-red-500/20 text-red-400 border border-red-500' 
+                        : 'bg-green-500/20 text-green-400 border border-green-500';
                     
-                    const statusBadge = log.status === 'BLOCKED' 
-                        ? `<span class="badge border-red-500 text-red-500 bg-red-500/10">BLOCKED</span>`
-                        : `<span class="badge border-green-500 text-green-500 bg-green-500/10">OK</span>`;
+                    // Name fett, IP klein darunter
+                    let deviceDisplay = `<div class="font-bold text-blue-300">${log.client_name}</div>
+                                         <div class="text-[10px] text-gray-500">${log.client_ip}</div>`;
 
-                    row.innerHTML = `
-                        <td class="py-2 text-gray-500">${log.time}</td>
-                        <td class="py-2 text-blue-400">${log.client}</td>
-                        <td class="py-2 text-white">${log.domain}</td>
-                        <td class="py-2 text-right">${statusBadge}</td>
+                    html += `
+                        <tr>
+                            <td class="p-3 text-gray-400">${log.time}</td>
+                            <td class="p-3">${deviceDisplay}</td>
+                            <td class="p-3 text-gray-200">${log.domain}</td>
+                            <td class="p-3 text-right"><span class="badge ${statusClass}">${log.status}</span></td>
+                        </tr>
                     `;
-                    tbody.appendChild(row);
                 });
-
-            } catch (error) {
-                console.error("Connection lost", error);
-            }
+                document.getElementById('log-body').innerHTML = html;
+            } catch(e) { console.log("Verbindung verloren..."); }
         }
-        
-        // Refresh every 2 seconds
-        setInterval(fetchData, 2000);
-        fetchData();
+        setInterval(update, 1000); // Jede Sekunde aktualisieren
+        update();
     </script>
 </body>
 </html>
